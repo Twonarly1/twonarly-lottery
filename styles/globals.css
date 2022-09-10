@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+    body {
+        @apply relative flex min-h-screen flex-col bg-bkg;
+    }
+}
+
+@layer components {
+    .stats {
+        @apply flex-1 rounded-md border-2 border-gray-200 p-4  text-center text-black;
+    }
+    .stats-container {
+        @apply rounded-lg border-2 border-gray-200 bg-white p-5;
+    }
+    .countdown {
+        @apply rounded-lg p-8 text-center text-5xl text-black lg:min-w-[150px];
+    }
+    .countdown-label {
+        @apply text-center text-sm  uppercase text-black;
+    }
+    .admin-button {
+        @apply flex-1 rounded-md  p-2;
+    }
+    .buy-button {
+        @apply mt-5 w-full rounded-md  bg-pink-50 px-10 py-5 font-semibold text-black shadow hover:bg-pink-100 disabled:cursor-not-allowed  disabled:from-gray-600  disabled:to-gray-600  disabled:text-white;
+    }
+}

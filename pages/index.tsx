@@ -1,86 +1,81 @@
-import type { NextPage } from 'next'
-import Head from 'next/head'
-import Image from 'next/image'
+import { useAddress, useContract, useContractData, useContractCall } from "@thirdweb-dev/react"
+import type { NextPage } from "next"
+import Header from "../components/Header"
+import Login from "../components/Login"
+import Loading from "../components/Loading"
+import { Suspense, useEffect, useState } from "react"
+import AdminControls from "../components/AdminControls"
+import Footer from "../components/Footer"
+import Marquee from "../components/Marquee"
+import UserTickets from "../components/nextDraw/UserTickets"
+import Winnings from "../components/Winnings"
+import DrawDetails from "../components/nextDraw/DrawDetails"
+import Tickets from "../components/nextDraw/Tickets"
 
 const Home: NextPage = () => {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-center py-2">
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+    const address = useAddress()
+    const { contract, isLoading } = useContract(process.env.NEXT_PUBLIC_LOTTERY_CONTRACT_ADDRESS)
+    const [userTickets, setUserTickets] = useState(0)
+    //read
+    const { data: remainingTickets } = useContractData(contract, "RemainingTickets")
+    const { data: currentWinningReward } = useContractData(contract, "CurrentWinningReward")
+    const { data: ticketPrice } = useContractData(contract, "ticketPrice")
+    const { data: ticketCommission } = useContractData(contract, "ticketCommission")
+    const { data: expiration } = useContractData(contract, "expiration")
+    const { data: tickets } = useContractData(contract, "getTickets")
+    const { data: winnings } = useContractData(contract, "getWinningsForAddress", address)
+    const { data: lastWinner } = useContractData(contract, "lastWinner")
+    const { data: lastWinnerAmount } = useContractData(contract, "lastWinnerAmount")
+    const { data: isLotteryOperator } = useContractData(contract, "lotteryOperator")
 
-      <main className="flex w-full flex-1 flex-col items-center justify-center px-20 text-center">
-        <h1 className="text-6xl font-bold">
-          Welcome to{' '}
-          <a className="text-blue-600" href="https://nextjs.org">
-            Next.js!
-          </a>
-        </h1>
+    //write
+    const { mutateAsync: BuyTickets } = useContractCall(contract, "BuyTickets")
+    console.log(BuyTickets)
 
-        <p className="mt-3 text-2xl">
-          Get started by editing{' '}
-          <code className="rounded-md bg-gray-100 p-3 font-mono text-lg">
-            pages/index.tsx
-          </code>
-        </p>
+    const { mutateAsync: WithdrawWinnings } = useContractCall(contract, "WithdrawWinnings")
 
-        <div className="mt-6 flex max-w-4xl flex-wrap items-center justify-around sm:w-full">
-          <a
-            href="https://nextjs.org/docs"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Documentation &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Find in-depth information about Next.js features and its API.
-            </p>
-          </a>
+    //can be done on backend?
+    useEffect(() => {
+        if (!tickets) return
+        const totwhiteickets: string[] = tickets
+        const noOfUserTickets = totwhiteickets.reduce(
+            (total, ticketAddress) => (ticketAddress === address ? total + 1 : total),
+            0
+        )
+        setUserTickets(noOfUserTickets)
+    }, [tickets, address])
 
-          <a
-            href="https://nextjs.org/learn"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Learn &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Learn about Next.js in an interactive course with quizzes!
-            </p>
-          </a>
+    if (isLoading) return <Loading />
+    if (!address) return <Login />
 
-          <a
-            href="https://github.com/vercel/next.js/tree/canary/examples"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Examples &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Discover and deploy boilerplate example Next.js projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className="mt-6 w-96 rounded-xl border p-6 text-left hover:text-blue-600 focus:text-blue-600"
-          >
-            <h3 className="text-2xl font-bold">Deploy &rarr;</h3>
-            <p className="mt-4 text-xl">
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+    return (
+        <div className="relative flex min-h-screen flex-col bg-bkg">
+            <div className=" z-10 flex-1 items-center">
+                <Header />
+                <Marquee lastWinner={lastWinner} lastWinnerAmount={lastWinnerAmount} />
+                {isLotteryOperator === address && <AdminControls />}
+                <Winnings winnings={winnings} WithdrawWinnings={WithdrawWinnings} />
+                {/* next draw box */}
+                <div className="m-5 items-start justify-center space-y-5 md:flex md:flex-row md:space-y-0 md:space-x-5">
+                    <DrawDetails
+                        currentWinningReward={currentWinningReward}
+                        remainingTickets={remainingTickets}
+                    />
+                    <div className="stats-containter space-y-2">
+                        <Tickets
+                            ticketPrice={ticketPrice}
+                            ticketCommission={ticketCommission}
+                            expiration={expiration}
+                            remainingTickets={remainingTickets}
+                            BuyTickets={BuyTickets}
+                        />
+                        <UserTickets userTickets={userTickets} />
+                    </div>
+                </div>
+            </div>
+            <Footer />
         </div>
-      </main>
-
-      <footer className="flex h-24 w-full items-center justify-center border-t">
-        <a
-          className="flex items-center justify-center gap-2"
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-        </a>
-      </footer>
-    </div>
-  )
+    )
 }
 
 export default Home
